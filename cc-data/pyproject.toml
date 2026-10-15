@@ -1,0 +1,10 @@
+[project]
+name = "cc-data"
+version = "0.1.0"
+description = "Builds the Capacity Catalyst Postgres (Supabase) database from the workbook."
+requires-python = ">=3.11"
+dependencies = [
+    "openpyxl>=3.1",
+    "psycopg[binary]>=3.1",
+    "python-dotenv>=1.0",
+]
