@@ -1,0 +1,100 @@
+/* Capacity Catalyst impact page. Swap the tokens below for CC brand colors/fonts. */
+:root {
+  color-scheme: light;
+  --page: #f7f6f3;
+  --surface: #ffffff;
+  --border: #e6e5e1;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --text-3: #75746f;
+  --accent: #2a78d6;
+  --radius: 14px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+  font: 15px/1.5 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page-header, main, .page-footer {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.page-header { padding-top: 48px; padding-bottom: 8px; }
+.eyebrow { margin: 0 0 6px; color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+h1 { margin: 0 0 12px; font-size: clamp(28px, 4vw, 40px); line-height: 1.15; letter-spacing: -0.01em; }
+.lede { margin: 0; max-width: 680px; color: var(--text-2); font-size: 17px; }
+
+main { display: grid; gap: 20px; padding-top: 28px; padding-bottom: 28px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  min-width: 0;
+}
+.card h2 { margin: 0; font-size: 19px; line-height: 1.3; }
+.subtitle { margin: 4px 0 18px; color: var(--text-2); font-size: 14px; max-width: 760px; }
+.slot { width: 100%; min-height: 40px; }
+.slot svg { display: block; }
+
+/* Two-up layout for the smaller charts on wide screens */
+@media (min-width: 900px) {
+  main { grid-template-columns: 1fr 1fr; }
+  .card-kpis, .card-partners, .card-demographics, .card-feedback, .card-cerc { grid-column: 1 / -1; }
+}
+
+/* KPI tiles */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.kpi { padding: 14px 16px; border-radius: 10px; background: var(--page); }
+.kpi-value { font-size: 30px; font-weight: 700; line-height: 1.1; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.kpi-label { margin-top: 4px; color: var(--text-2); font-size: 13px; }
+
+/* Legends */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 10px; font-size: 13px; color: var(--text-2); }
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+/* Demographic panels */
+.panels { display: grid; gap: 20px 32px; }
+.panel h3 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+
+/* Feedback rows */
+.likert-row { margin: 0 0 12px; }
+.likert-label { font-size: 14px; margin-bottom: 4px; }
+
+.note { margin: 12px 0 0; color: var(--text-3); font-size: 13px; }
+
+/* Data tables */
+.data-table { margin-top: 14px; font-size: 13px; }
+.data-table summary { cursor: pointer; color: var(--accent); width: fit-content; }
+.table-wrap { overflow-x: auto; margin-top: 8px; max-height: 360px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--surface); color: var(--text-2); font-weight: 600; }
+
+/* Plot tooltips */
+[aria-label="tip"] { font: 12px var(--font); }
+
+.loading, .error { color: var(--text-2); }
+
+.page-footer { padding-bottom: 48px; color: var(--text-3); font-size: 13px; }
+.embed-help summary { cursor: pointer; color: var(--accent); }
+.embed-row { display: grid; gap: 4px; margin: 12px 0; }
+.embed-row code { display: block; padding: 8px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: nowrap; color: var(--text-2); }
+.embed-row button { justify-self: start; font: inherit; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+
+/* Embed mode (?chart=id): just the chart, transparent, no page chrome */
+html.embed body { background: transparent; }
+html.embed .page-header, html.embed .page-footer { display: none; }
+html.embed main { display: block; padding: 0; max-width: none; }
+html.embed .card { border: 0; border-radius: 0; padding: 8px 4px; background: transparent; }

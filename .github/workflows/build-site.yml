@@ -1,0 +1,66 @@
+# Rebuilds the public charts from Supabase and publishes them to GitHub Pages.
+#
+# Runs: Mondays and Thursdays (~7am Pacific), whenever site code changes on main,
+# and on demand from the Actions tab ("Run workflow").
+# The scheduled runs also keep the Supabase free tier from pausing.
+#
+# Needs one repo secret: DATABASE_URL (Supabase session pooler connection string).
+
+name: Build and publish charts
+
+on:
+  schedule:
+    - cron: "17 14 * * 1,4"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "cc-data/site/**"
+      - "cc-data/pipeline/export_site_data.py"
+      - ".github/workflows/build-site.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cc-data
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Export chart data from Supabase
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: uv run pipeline/export_site_data.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: cc-data/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

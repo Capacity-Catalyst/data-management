@@ -7,7 +7,9 @@ Steps:
   2. db/002_seed.sql              reference data (programs, roles, forms)
   3. load_raw.py                  every workbook tab -> raw.* (rebuilt each run)
   4. db/010_transform.sql         raw.* -> relational tables (never overwrites edits)
-  5. db/020_reporting_views.sql   chart-ready views in reporting.*
+  5. db/003_public_flags.sql      what may appear on the public website
+  6. db/020_reporting_views.sql   chart-ready views in reporting.*
+  7. db/030_site_views.sql        public website views (reporting.site_*)
 
 Safe to rerun. Each step runs in its own transaction, so a failure leaves the
 database as it was before that step.
@@ -51,7 +53,9 @@ def main(workbook: str) -> None:
             load_raw.load(conn, workbook)
 
         run_sql(conn, "010_transform.sql")
+        run_sql(conn, "003_public_flags.sql")  # after partners exist
         run_sql(conn, "020_reporting_views.sql")
+        run_sql(conn, "030_site_views.sql")
 
         print("\nRow counts:")
         for t in SUMMARY_TABLES:

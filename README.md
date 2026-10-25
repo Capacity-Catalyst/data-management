@@ -13,7 +13,13 @@ workbook.xlsx ──load_raw.py──► raw.*        flat copies of each tab (s
                                   │
                      020_reporting_views.sql
                                   ▼
-                            reporting.*     chart-ready views (read by the charts site)
+                            reporting.*     chart-ready views
+                                  │
+                       030_site_views.sql      reporting.site_*  (the only views made public)
+                                  │
+              GitHub Action: export_site_data.py → site/data/*.json
+                                  ▼
+                     GitHub Pages: site/  (public charts, embeddable on the CC website)
 ```
 
 | Folder | What's in it |
@@ -21,7 +27,12 @@ workbook.xlsx ──load_raw.py──► raw.*        flat copies of each tab (s
 | `db/001_schema.sql` | Tables, keys, constraints, row level security |
 | `db/002_seed.sql` | Reference rows: programs, partner roles, participant groups, survey forms |
 | `db/010_transform.sql` | Parses `raw.*` into the relational tables |
-| `db/020_reporting_views.sql` | Views used for charts |
+| `db/003_public_flags.sql` | `partners.show_publicly` (hides confidential partners from the website) |
+| `db/020_reporting_views.sql` | Internal reporting views |
+| `db/030_site_views.sql` | `reporting.site_*` views: the only data published on the website |
+| `pipeline/export_site_data.py` | Writes every `reporting.site_*` view to `site/data/*.json` |
+| `site/` | The public chart page (`index.html`, `charts.js`, `app.js`, `styles.css`) |
+| `.github/workflows/build-site.yml` (repo root) | Exports data and publishes `cc-data/site/` to GitHub Pages |
 | `pipeline/load_raw.py` | Loads every workbook tab into `raw.*` |
 | `pipeline/setup.py` | Runs all of the above in order |
 
@@ -84,6 +95,50 @@ alumni_panel_counts     vendor_payments ── partners
 
 `created_at` and `updated_at` are filled in automatically.
 
+## Public charts (website)
+
+**Live page:** `https://capacity-catalyst.github.io/data-management/`
+**One chart (for embedding):** add `?chart=<id>`, e.g. `?chart=hosts`
+
+Chart ids: `kpis`, `externs`, `hosts`, `cerc`, `hours`, `stipends`, `partners`, `sectors`, `demographics`, `feedback`.
+
+### One-time GitHub setup
+
+1. **Add the secret:** repo **Settings → Secrets and variables → Actions → New repository secret**. Name `DATABASE_URL`, value = the same Supabase *session pooler* string as your `.env`.
+2. **Turn on Pages:** **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+3. **Run it:** **Actions → Build and publish charts → Run workflow**. The page URL appears in the run summary.
+
+GitHub Pages from a **private** repo needs GitHub Team, which is free once the org's nonprofit verification goes through. Until then, either make the repo public (it contains code only; data is generated at deploy time and never committed) or wait for verification.
+
+### When does it update?
+
+Mondays and Thursdays automatically, whenever `site/` changes on `main`, and any time from **Actions → Run workflow** (do this after a big data edit). These runs also keep Supabase's free tier from pausing.
+
+### Putting a chart on the CC website
+
+Open the live page, expand **Embed these charts on another page** at the bottom, and copy the snippet. It looks like:
+
+```html
+<iframe src="https://capacity-catalyst.github.io/data-management/?chart=hosts"
+        title="Host organizations per cohort" style="width:100%;border:0;" height="480" loading="lazy"></iframe>
+```
+
+Paste it into the website builder's embed / custom HTML block, and adjust `height` if the chart is cut off. Embedded charts have a transparent background so they sit on the site's own page color. For auto-height, the embed posts `{type: "cc-chart:height", height}` to the parent page; a site that allows scripts can listen for it and set the iframe height.
+
+### Changing or adding charts
+
+- Data for a chart = a `reporting.site_*` view in `db/030_site_views.sql`. Apply with `psql "$DATABASE_URL" -f db/030_site_views.sql`.
+- Drawing = an entry in `CHARTS` in `site/charts.js` (uses [Observable Plot](https://observablehq.com/plot/)).
+- Colors and fonts: `COLORS` in `site/charts.js` and the tokens at the top of `site/styles.css`. Swap in CC brand colors there.
+- Preview locally: `uv run pipeline/export_site_data.py`, then `uv run python -m http.server -d site 8000` and open `http://localhost:8000`.
+
+### Privacy rules for anything public
+
+- Only `reporting.site_*` views are exported. Never point the site at other views or tables.
+- Aggregates only: no row-level survey data and no free-text answers.
+- Demographic groups smaller than 3 are combined ("Another identity").
+- Partners with `show_publicly = false` are left out (the partner marked CONFIDENTIAL starts unchecked).
+
 ## Data to review (from the first import)
 
 - **Engagement roles were inferred.** The workbook lists roles per partner, not per term. Externship terms were set to *Extern Host*; CERC terms to *Course Nonprofit Partner* if the partner had that role, otherwise *Collaborator*. These rows have the note "role inferred from program".
@@ -94,3 +149,10 @@ alumni_panel_counts     vendor_payments ── partners
 - **Mentor "Duplicates"** column text is kept in `cohort_facts.notes`.
 - **"HT"** in the honoraria tab wasn't matched to a partner. If it's Huston-Tillotson, set `vendor_payments.partner_id`.
 - **Sector spelling:** "veterenary equity" was imported as-is.
+- **Totals differ from the workbook's own total rows**, which de-duplicated some people with hidden constants. Before publishing, confirm these with the manager:
+  - Extern placements: 45 (sum of cohorts) vs 43 in the workbook's Total row
+  - CERC undergraduates: 72 vs 69 "Undergraduates served"
+  - Stipends paid: $491,500 (all recorded stipends) vs $338,150 "Capacity Catalyst total"
+
+  The site labels these as *placements* and *stipends paid*. If the workbook's numbers are the official ones, record the reason (e.g. returning participants) so the views can apply it.
+- **Feedback:** "This externship was NOT a good use of my time" is reverse-scored on the website and shown as "...was a good use of my time", with a footnote saying so.
